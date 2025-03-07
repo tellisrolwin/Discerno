@@ -6,35 +6,52 @@ import {
   Image,
   ScrollView,
   Dimensions,
+  TouchableOpacity,
 } from "react-native";
+import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
+import { RootStackParamList } from "../App"; // Import the types from App.tsx
 
 const { width, height } = Dimensions.get("window");
 
+type ArticleScreenRouteProp = RouteProp<RootStackParamList, "Article">;
+
 const Article1 = () => {
+  const route = useRoute<ArticleScreenRouteProp>();
+  const navigation = useNavigation();
+  const {
+    articleLink,
+    articleTitle,
+    articleImage,
+    articleAuthor,
+    articleDescription,
+  } = route.params;
+
+  // Construct the author byline. Handle cases where articleAuthor might be null/undefined.
+  const authorByline = articleAuthor
+    ? `By ${articleAuthor}, a reporter with five years of experience covering consumer tech releases, EU tech policy, online platforms, and mechanical keyboards.`
+    : "";
+
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.phoneFrame}>
-        <View style={styles.content}>
-          <Text style={styles.publication}>The Verge</Text>
-          <Text style={styles.title}>
-            Lenovo's transparent laptop concept resurfaces in new leak
-          </Text>
-          <Text style={styles.author}>
-            By Jon Porter, a reporter with five years of experience covering
-            consumer tech releases, EU tech policy, online platforms, and
-            mechanical keyboards.
-          </Text>
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>← Back</Text>
+        </TouchableOpacity>
+      </View>
 
-          <Image source={{}} style={styles.image} />
+      <View style={styles.content}>
+        <Text style={styles.publication}>The Verge</Text>
+        <Text style={styles.title}>{articleTitle}</Text>
+        <Text style={styles.author}>{authorByline}</Text>
 
-          <Text style={styles.bodyText}>
-            Leaker Evan Blass has offered another look at Lenovo's transparent
-            laptop concept ahead of its presumed unveiling at Mobile World
-            Congress in Barcelona later this month. The new leaked press image
-            shows two of the concept laptops on a desk, with one of the devices
-            being ...
-          </Text>
-        </View>
+        {articleImage && (
+          <Image source={{ uri: articleImage }} style={styles.image} />
+        )}
+
+        <Text style={styles.bodyText}>{articleDescription}</Text>
       </View>
     </ScrollView>
   );
@@ -45,36 +62,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#121212", // Dark background
   },
-  phoneFrame: {
-    // backgroundColor: 'white',  // Phone frame background (optional)
-    // borderColor: '#888',      // Phone frame border (optional)
-    // borderWidth: 2,            // Phone frame border width (optional)
-    // borderRadius: 40,         // Phone frame border radius (optional)
-    // overflow: 'hidden',       // Clip content to the frame (optional)
-    width: width,
-    height: height,
-    alignSelf: "center",
+  header: {
+    paddingHorizontal: width * 0.05,
+    paddingTop: height * 0.05,
+    paddingBottom: height * 0.02,
   },
-  statusBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: width * 0.05, // 5% of screen width
-    paddingTop: height * 0.04, // 4% of screen height (adjust as needed)
-    paddingBottom: height * 0.01,
+  backButton: {
+    padding: 10,
   },
-  time: {
-    color: "white",
-    fontSize: width * 0.04, // 4% of screen width
-  },
-  statusBarIcons: {
-    flexDirection: "row",
-  },
-  iconPlaceholder: {
-    width: width * 0.05, // 5% of screen width
-    height: width * 0.05, // 5% of screen width
-    backgroundColor: "gray", // Placeholder color
-    marginLeft: width * 0.01, // 1% of screen width
+  backButtonText: {
+    color: "#007AFF",
+    fontSize: width * 0.045,
   },
   content: {
     paddingHorizontal: width * 0.05, // 5% of screen width

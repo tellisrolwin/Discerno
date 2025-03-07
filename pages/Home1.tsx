@@ -5,14 +5,15 @@ import {
   StyleSheet,
   SafeAreaView,
   ScrollView,
-  Image,
   TouchableOpacity,
   Dimensions,
   Platform,
-  ActivityIndicator, // Import ActivityIndicator
-  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../App"; // Import the types from App.tsx
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -30,13 +31,15 @@ interface CategorizedHeadlines {
   [category: string]: Headline[];
 }
 
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
+
 const Home1 = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
   const [selectedFilter, setSelectedFilter] = useState("technology");
   const [greeting, setGreeting] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [newsData, setNewsData] = useState<CategorizedHeadlines>({});
   const [loading, setLoading] = useState(true);
-  const [articleContent, setArticleContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const YOUR_COMPUTER_IP = "192.168.0.106";
@@ -95,7 +98,7 @@ const Home1 = () => {
     fetchNews();
   }, []);
 
-  const fetchArticle = async (link: string) => {
+  const fetchArticle = async (link: string, title: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -108,11 +111,14 @@ const Home1 = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data: { article: string } = await response.json();
-      setArticleContent(data.article); // Store the article content
-      Alert.alert("Article", data.article, [
-        //use alert for now,
-        { text: "OK", onPress: () => setArticleContent(null) }, //clear on OK
-      ]);
+
+      // Navigate to the Article screen with the article data
+      navigation.navigate("Article", {
+        articleLink: link,
+        articleTitle: title,
+        articleDescription: data.article,
+        articleAuthor: "Jon Porter", // You might want to get this from your API
+      });
     } catch (error: any) {
       console.error("Could not fetch article:", error);
       setError(error.message || "Failed to load article.");
@@ -184,7 +190,7 @@ const Home1 = () => {
                   <View style={styles.newsContent}>
                     <TouchableOpacity
                       onPress={() => {
-                        fetchArticle(item.link);
+                        fetchArticle(item.link, item.title);
                       }}
                     >
                       <Text style={styles.newsTitle}>{item.title}</Text>
