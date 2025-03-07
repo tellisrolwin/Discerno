@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  ActivityIndicator, // Import ActivityIndicator
+  Alert,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
@@ -18,10 +20,26 @@ const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
 const vh = (percentageHeight: number) =>
   Dimensions.get("window").height * (percentageHeight / 100);
 
+interface Headline {
+  title: string;
+  link: string;
+  summary: string;
+}
+
+interface CategorizedHeadlines {
+  [category: string]: Headline[];
+}
+
 const Home1 = () => {
   const [selectedFilter, setSelectedFilter] = useState("technology");
   const [greeting, setGreeting] = useState("");
   const [currentDate, setCurrentDate] = useState("");
+  const [newsData, setNewsData] = useState<CategorizedHeadlines>({});
+  const [loading, setLoading] = useState(true);
+  const [articleContent, setArticleContent] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const YOUR_COMPUTER_IP = "192.168.0.106";
 
   useEffect(() => {
     const updateGreetingAndDate = () => {
@@ -55,23 +73,74 @@ const Home1 = () => {
     return () => clearInterval(intervalId);
   }, []); // Empty dependency array means this effect runs once on mount
 
-  const newsItems = [
-    {
-      title: "Tencent's gaming cash cow Honor of Kings sets sights on MENA",
-      source: "TechCrunch",
-      time: "10m",
-      image: "", // Replace with your image URL or require statement
-      sourceLogo: "", // Replace with your logo URL or require statement
-    },
-    {
-      title:
-        "Apple smart ring development accelerating, claims extremely sketchy report",
-      source: "9to5Mac",
-      time: "13m",
-      image: "",
-      sourceLogo: "",
-    },
-  ];
+  useEffect(() => {
+    const fetchNews = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`http://${YOUR_COMPUTER_IP}:8000/news`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: CategorizedHeadlines = await response.json();
+        setNewsData(data);
+      } catch (error: any) {
+        console.error("Could not fetch news:", error);
+        setError(error.message || "Failed to load news.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNews();
+  }, []);
+
+  const fetchArticle = async (link: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `http://${YOUR_COMPUTER_IP}:8000/article?link=${encodeURIComponent(
+          link
+        )}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data: { article: string } = await response.json();
+      setArticleContent(data.article); // Store the article content
+      Alert.alert("Article", data.article, [
+        //use alert for now,
+        { text: "OK", onPress: () => setArticleContent(null) }, //clear on OK
+      ]);
+    } catch (error: any) {
+      console.error("Could not fetch article:", error);
+      setError(error.message || "Failed to load article.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // --- Conditional Rendering based on loading and data ---
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -91,43 +160,48 @@ const Home1 = () => {
             selectedValue={selectedFilter}
             onValueChange={(itemValue) => setSelectedFilter(itemValue)}
             style={styles.filterSelect}
-            dropdownIconColor="white" // For iOS, to change the dropdown arrow color
-            itemStyle={{ color: "white", fontSize: vw(3) }} // Style for individual options
+            dropdownIconColor="white"
+            itemStyle={{ color: "white", fontSize: vw(3) }}
           >
-            <Picker.Item label="Technology" value="technology" />
-            <Picker.Item label="Business" value="business" />
-            <Picker.Item label="World" value="world" />
+            {/* Dynamically generate Picker.Items from categories */}
+            {Object.keys(newsData).map((category) => (
+              <Picker.Item key={category} label={category} value={category} />
+            ))}
           </Picker>
         </View>
 
-        {newsItems.map((item, index) => (
-          <View key={index} style={styles.newsItem}>
-            <View style={styles.newsImage}>
-              <Image
-                source={item.image ? { uri: item.image } : undefined}
-                style={styles.image}
-              />
-            </View>
-            <View style={styles.newsContent}>
-              <Text style={styles.newsTitle}>{item.title}</Text>
-              <View style={styles.newsSource}>
-                <View style={styles.newsSourceLogo}>
-                  <Image
-                    source={
-                      item.sourceLogo ? { uri: item.sourceLogo } : undefined
-                    }
-                    style={styles.sourceLogoImage}
-                  />
+        {/* --- Display News Data --- */}
+        {Object.keys(newsData)
+          .filter(
+            (category) =>
+              selectedFilter.toLowerCase() === category.toLowerCase()
+          ) //for the picker to select
+          .map((category: string) => (
+            <View key={category}>
+              {newsData[category].map((item: Headline, index: number) => (
+                <View key={index} style={styles.newsItem}>
+                  {/* Assuming no images for now, add back if needed */}
+                  <View style={styles.newsContent}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        fetchArticle(item.link);
+                      }}
+                    >
+                      <Text style={styles.newsTitle}>{item.title}</Text>
+                    </TouchableOpacity>
+                    <View style={styles.newsSource}>
+                      {/* No source logo for now */}
+                      <Text style={styles.newsSourceName}>BBC News</Text>
+                      {/*  <Text style={styles.newsTime}>• {item.time}</Text> */}
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.ellipsisBtn}>
+                    <Text style={styles.ellipsisText}>•••</Text>
+                  </TouchableOpacity>
                 </View>
-                <Text style={styles.newsSourceName}>{item.source}</Text>
-                <Text style={styles.newsTime}>• {item.time}</Text>
-              </View>
+              ))}
             </View>
-            <TouchableOpacity style={styles.ellipsisBtn}>
-              <Text style={styles.ellipsisText}>•••</Text>
-            </TouchableOpacity>
-          </View>
-        ))}
+          ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -260,6 +334,21 @@ const styles = StyleSheet.create({
   ellipsisText: {
     color: "#666",
     fontSize: vw(5), // Make sure the text is large enough to be tappable
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 16,
   },
 });
 
