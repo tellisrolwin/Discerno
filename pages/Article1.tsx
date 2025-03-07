@@ -43,9 +43,9 @@ const Article1 = () => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.publication}>The Verge</Text>
+        <Text style={styles.publication}>BBC</Text>
         <Text style={styles.title}>{articleTitle}</Text>
-        <Text style={styles.author}>{authorByline}</Text>
+        {/* <Text style={styles.author}>{authorByline}</Text> */}
 
         {articleImage && (
           <Image source={{ uri: articleImage }} style={styles.image} />
