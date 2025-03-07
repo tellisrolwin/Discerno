@@ -3,6 +3,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider as PaperProvider } from "react-native-paper";
 import "./styles/global.css";
 import Home1 from "./pages/Home1";
+import Article1 from "./pages/Article1";
 
 export default function App() {
   return (

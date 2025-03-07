@@ -1,115 +1,265 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Dimensions } from "react-native";
-import SparkleSvg from "../assets/images/sparkle1.svg";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Text, Button, Menu, Divider, Avatar } from "react-native-paper";
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
 
-const windowWidth = Dimensions.get("window").width;
+const { width: screenWidth } = Dimensions.get("window");
+
+const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
+const vh = (percentageHeight: number) =>
+  Dimensions.get("window").height * (percentageHeight / 100);
 
 const Home1 = () => {
+  const [selectedFilter, setSelectedFilter] = useState("technology");
   const [greeting, setGreeting] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
 
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      setGreeting("Morning! 🔆");
-    } else if (hour < 18) {
-      setGreeting("Afternoon! ☀️");
-    } else {
-      setGreeting("Evening! 🌙");
-    }
-  }, []);
+    const updateGreetingAndDate = () => {
+      const now = new Date();
+      const hours = now.getHours();
 
-  const date = new Date();
-  const options = { weekday: "short", day: "numeric", month: "short" };
-  const formattedDate = date.toLocaleDateString("en-US", options);
+      // Determine greeting
+      let newGreeting = "";
+      if (hours >= 5 && hours < 12) {
+        newGreeting = "Good\nMorning";
+      } else if (hours >= 12 && hours < 18) {
+        newGreeting = "Good\nAfternoon";
+      } else {
+        newGreeting = "Good\nEvening";
+      }
+      setGreeting(newGreeting);
 
-  const [visible, setVisible] = React.useState(false);
+      // Format date (e.g., "Tue 20 Feb")
+      const dayOfWeek = now.toLocaleDateString("en-US", { weekday: "short" }); // "Tue"
+      const dayOfMonth = now.getDate(); // "20"
+      const month = now.toLocaleDateString("en-US", { month: "short" }); // "Feb"
+      setCurrentDate(`${dayOfWeek}, ${dayOfMonth} ${month}`);
+    };
 
-  const openMenu = () => setVisible(true);
-  const closeMenu = () => setVisible(false);
+    updateGreetingAndDate(); // Call immediately
+
+    // Update greeting and date every minute (optional, but good for accuracy)
+    const intervalId = setInterval(updateGreetingAndDate, 60000);
+
+    // Clean up interval on unmount
+    return () => clearInterval(intervalId);
+  }, []); // Empty dependency array means this effect runs once on mount
+
+  const newsItems = [
+    {
+      title: "Tencent's gaming cash cow Honor of Kings sets sights on MENA",
+      source: "TechCrunch",
+      time: "10m",
+      image: "", // Replace with your image URL or require statement
+      sourceLogo: "", // Replace with your logo URL or require statement
+    },
+    {
+      title:
+        "Apple smart ring development accelerating, claims extremely sketchy report",
+      source: "9to5Mac",
+      time: "13m",
+      image: "",
+      sourceLogo: "",
+    },
+  ];
 
   return (
-    <SafeAreaView style={styles.homeContainer}>
-      <View style={styles.leftContainer}>
-        <Text style={styles.greetText}>
-          Good{"\n"}
-          {greeting}
-        </Text>
-        <Text style={styles.dateText}>{formattedDate}</Text>
-      </View>
-      <View style={styles.rightContainer}>
-        <SparkleSvg width={windowWidth * 0.15} height={windowWidth * 0.15} />
-        <Menu
-          visible={visible}
-          onDismiss={closeMenu}
-          anchor={
-            <Button onPress={openMenu} mode="outlined" textColor="#999999">
-              Categories
-            </Button>
-          }
-        >
-          <Menu.Item
-            onPress={() => {
-              closeMenu();
-            }}
-            title="Category 1"
-          />
-          <Menu.Item
-            onPress={() => {
-              closeMenu();
-            }}
-            title="Category 2"
-          />
-          <Divider />
-          <Menu.Item
-            onPress={() => {
-              closeMenu();
-            }}
-            title="Category 3"
-          />
-        </Menu>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.goodMorning}>{greeting}</Text>
+            <Text style={styles.date}>{currentDate}</Text>
+          </View>
+          <View style={styles.sparkleContainer}>
+            <Text style={styles.sparkle}>✨</Text>
+          </View>
+        </View>
+
+        <View style={styles.filter}>
+          <Picker
+            selectedValue={selectedFilter}
+            onValueChange={(itemValue) => setSelectedFilter(itemValue)}
+            style={styles.filterSelect}
+            dropdownIconColor="white" // For iOS, to change the dropdown arrow color
+            itemStyle={{ color: "white", fontSize: vw(3) }} // Style for individual options
+          >
+            <Picker.Item label="Technology" value="technology" />
+            <Picker.Item label="Business" value="business" />
+            <Picker.Item label="World" value="world" />
+          </Picker>
+        </View>
+
+        {newsItems.map((item, index) => (
+          <View key={index} style={styles.newsItem}>
+            <View style={styles.newsImage}>
+              <Image
+                source={item.image ? { uri: item.image } : undefined}
+                style={styles.image}
+              />
+            </View>
+            <View style={styles.newsContent}>
+              <Text style={styles.newsTitle}>{item.title}</Text>
+              <View style={styles.newsSource}>
+                <View style={styles.newsSourceLogo}>
+                  <Image
+                    source={
+                      item.sourceLogo ? { uri: item.sourceLogo } : undefined
+                    }
+                    style={styles.sourceLogoImage}
+                  />
+                </View>
+                <Text style={styles.newsSourceName}>{item.source}</Text>
+                <Text style={styles.newsTime}>• {item.time}</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.ellipsisBtn}>
+              <Text style={styles.ellipsisText}>•••</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  homeContainer: {
-    flexDirection: "row", // Keep as row
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#121826",
+  },
+  container: {
+    width: "100%",
+    maxWidth: 5000,
+    backgroundColor: "#121826",
+    borderRadius: 20,
+    //overflow: 'hidden', // Handled by border radius on Android, SafeAreaView on iOS
+    // Removed box-shadow and used elevation for Android, shadow props for iOS
+    ...Platform.select({
+      ios: {
+        shadowColor: "black",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8, // This adds the shadow effect on Android
+      },
+    }),
+    alignSelf: "center",
+  },
+  header: {
+    flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#121212",
-    paddingLeft: windowWidth * 0.03,
-    paddingRight: windowWidth * 0.02,
-    minHeight: "100%",
-    paddingTop: windowWidth * 0.01, // Add top padding to the whole container
+    alignItems: "center",
+    paddingHorizontal: vw(4),
+    paddingTop: vh(3),
+    paddingBottom: 0, // Adjusted padding to match overall structure
   },
-  leftContainer: {
-    // Add a container for the left side for easier styling, if needed
-    flexDirection: "column", // Default, but good to be explicit
-  },
-  rightContainer: {
-    flexDirection: "column", // Stack sparkle and categories vertically
-    alignItems: "center", // Center items horizontally within the column
-    justifyContent: "flex-start", // Align items to the top of the container
-    paddingTop: windowWidth * 0.05,
-  },
-  greetText: {
-    fontSize: windowWidth * 0.1,
+  goodMorning: {
+    fontSize: vw(9),
     fontWeight: "bold",
+    color: "#fff",
+  },
+  date: {
+    fontSize: vw(4),
+    color: "#ddd",
+  },
+  sparkleContainer: {
+    position: "relative",
+    width: vw(8),
+    height: vw(8),
+  },
+  sparkle: {
+    position: "absolute",
+    fontSize: vw(7),
+    color: "#fff",
+    right: vw(2),
+  },
+  filter: {
+    paddingHorizontal: vw(4),
+    paddingTop: vh(1),
+    paddingBottom: vh(2),
+  },
+  filterSelect: {
+    backgroundColor: "#292d39",
     color: "white",
-    maxWidth: "100%",
+    borderRadius: 10,
+    // fontSize is set in the <Picker> component's itemStyle prop
   },
-  dateText: {
-    fontSize: windowWidth * 0.06,
-    fontWeight: "bold",
-    color: "#999999",
+  newsItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: vh(2),
+    paddingHorizontal: vw(4),
+    borderBottomWidth: 1,
+    borderBottomColor: "#292d39",
   },
-  categoriesText: {
-    fontSize: windowWidth * 0.06,
+  newsImage: {
+    width: vw(15),
+    height: vw(15),
+    marginRight: vw(3),
+    borderRadius: 10,
+    overflow: "hidden",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  newsContent: {
+    flex: 1,
+  },
+  newsTitle: {
+    fontSize: vw(3.5),
     fontWeight: "bold",
-    color: "#999999",
-    marginTop: windowWidth * 0.02, // Add some space between sparkle and text
+    marginBottom: vh(1),
+    lineHeight: vw(4.5), // Adjust as needed
+    color: "#fff",
+  },
+  newsSource: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  newsSourceLogo: {
+    width: vw(3),
+    height: vw(3),
+    borderRadius: vw(1.5), // 50% of width/height
+    marginRight: vw(1),
+    overflow: "hidden",
+  },
+  sourceLogoImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  newsSourceName: {
+    fontSize: vw(2.5),
+    color: "#aaa",
+    marginRight: vw(1),
+  },
+  newsTime: {
+    fontSize: vw(2.5),
+    color: "#aaa",
+  },
+  ellipsisBtn: {
+    marginLeft: vw(6),
+    marginRight: vw(1),
+    width: vw(8),
+  },
+  ellipsisText: {
+    color: "#666",
+    fontSize: vw(5), // Make sure the text is large enough to be tappable
   },
 });
 
