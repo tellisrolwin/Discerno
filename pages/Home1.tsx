@@ -9,11 +9,13 @@ import {
   Dimensions,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App"; // Import the types from App.tsx
+import { logout } from "../services/AuthService";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -41,10 +43,18 @@ const Home1 = () => {
   const [newsData, setNewsData] = useState<CategorizedHeadlines>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState("User");
 
   const YOUR_COMPUTER_IP = "192.168.0.106";
 
   useEffect(() => {
+    // Get current user info
+    const userJSON = global.appStorage?.getItem("currentUser");
+    if (userJSON) {
+      const user = JSON.parse(userJSON);
+      setUsername(user.name || "User");
+    }
+
     const updateGreetingAndDate = () => {
       const now = new Date();
       const hours = now.getHours();
@@ -127,6 +137,25 @@ const Home1 = () => {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        onPress: () => {
+          logout();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: "Login" }],
+          });
+        },
+      },
+    ]);
+  };
+
   // --- Conditional Rendering based on loading and data ---
   if (loading) {
     return (
@@ -155,9 +184,12 @@ const Home1 = () => {
           <View>
             <Text style={styles.goodMorning}>{greeting}</Text>
             <Text style={styles.date}>{currentDate}</Text>
+            <Text style={styles.username}>{username}</Text>
           </View>
           <View style={styles.sparkleContainer}>
-            <Text style={styles.sparkle}>✨</Text>
+            <TouchableOpacity onPress={handleLogout}>
+              <Text style={styles.logoutButton}>Logout</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -223,8 +255,6 @@ const styles = StyleSheet.create({
     maxWidth: 5000,
     backgroundColor: "#121826",
     borderRadius: 20,
-    //overflow: 'hidden', // Handled by border radius on Android, SafeAreaView on iOS
-    // Removed box-shadow and used elevation for Android, shadow props for iOS
     ...Platform.select({
       ios: {
         shadowColor: "black",
@@ -233,7 +263,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 8, // This adds the shadow effect on Android
+        elevation: 8,
       },
     }),
     alignSelf: "center",
@@ -244,7 +274,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: vw(4),
     paddingTop: vh(3),
-    paddingBottom: 0, // Adjusted padding to match overall structure
+    paddingBottom: 0,
   },
   goodMorning: {
     fontSize: vw(9),
@@ -255,16 +285,22 @@ const styles = StyleSheet.create({
     fontSize: vw(4),
     color: "#ddd",
   },
-  sparkleContainer: {
-    position: "relative",
-    width: vw(8),
-    height: vw(8),
+  username: {
+    fontSize: vw(3.5),
+    color: "#007AFF",
+    marginTop: vh(0.5),
   },
-  sparkle: {
-    position: "absolute",
-    fontSize: vw(7),
+  sparkleContainer: {
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  logoutButton: {
+    backgroundColor: "#292d39",
     color: "#fff",
-    right: vw(2),
+    padding: vw(2),
+    borderRadius: 8,
+    overflow: "hidden",
+    fontSize: vw(3),
   },
   filter: {
     paddingHorizontal: vw(4),
@@ -275,7 +311,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#292d39",
     color: "white",
     borderRadius: 10,
-    // fontSize is set in the <Picker> component's itemStyle prop
   },
   newsItem: {
     flexDirection: "row",
@@ -304,7 +339,7 @@ const styles = StyleSheet.create({
     fontSize: vw(3.5),
     fontWeight: "bold",
     marginBottom: vh(1),
-    lineHeight: vw(4.5), // Adjust as needed
+    lineHeight: vw(4.5),
     color: "#fff",
   },
   newsSource: {
@@ -314,7 +349,7 @@ const styles = StyleSheet.create({
   newsSourceLogo: {
     width: vw(3),
     height: vw(3),
-    borderRadius: vw(1.5), // 50% of width/height
+    borderRadius: vw(1.5),
     marginRight: vw(1),
     overflow: "hidden",
   },
@@ -339,7 +374,7 @@ const styles = StyleSheet.create({
   },
   ellipsisText: {
     color: "#666",
-    fontSize: vw(5), // Make sure the text is large enough to be tappable
+    fontSize: vw(5),
   },
   loadingContainer: {
     flex: 1,
