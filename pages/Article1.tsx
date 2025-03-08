@@ -1,4 +1,5 @@
-import React from "react";
+// Article1.tsx
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,17 +8,30 @@ import {
   ScrollView,
   Dimensions,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
+import {
+  RouteProp,
+  useRoute,
+  useNavigation,
+  NavigationProp,
+} from "@react-navigation/native"; // Import NavigationProp
 import { RootStackParamList } from "../App"; // Import the types from App.tsx
 
 const { width, height } = Dimensions.get("window");
 
 type ArticleScreenRouteProp = RouteProp<RootStackParamList, "Article">;
 
+// Correctly type the navigation prop
+type ArticleScreenNavigationProp = NavigationProp<
+  RootStackParamList,
+  "Article"
+>;
+
 const Article1 = () => {
   const route = useRoute<ArticleScreenRouteProp>();
-  const navigation = useNavigation();
+  // Use the typed navigation prop
+  const navigation = useNavigation<ArticleScreenNavigationProp>();
   const {
     articleLink,
     articleTitle,
@@ -26,10 +40,38 @@ const Article1 = () => {
     articleDescription,
   } = route.params;
 
+  const [loadingSummary, setLoadingSummary] = useState(false);
+
   // Construct the author byline. Handle cases where articleAuthor might be null/undefined.
   const authorByline = articleAuthor
     ? `By ${articleAuthor}, a reporter with five years of experience covering consumer tech releases, EU tech policy, online platforms, and mechanical keyboards.`
     : "";
+
+  const fetchSummary = async () => {
+    setLoadingSummary(true);
+    try {
+      const response = await fetch(
+        `http://10.243.104.74:8000/summary?link=${encodeURIComponent(
+          articleLink
+        )}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (data.summary) {
+        navigation.navigate("ArticleSummary", { summary: data.summary }); // Now TypeScript knows the correct parameters
+      } else {
+        console.error("Summary not found in response:", data);
+        alert("Could not generate summary.");
+      }
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+      alert("Failed to fetch summary.");
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -52,6 +94,17 @@ const Article1 = () => {
         )}
 
         <Text style={styles.bodyText}>{articleDescription}</Text>
+        <TouchableOpacity
+          style={styles.summaryButton}
+          onPress={fetchSummary}
+          disabled={loadingSummary}
+        >
+          {loadingSummary ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.summaryButtonText}>View Summary</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -105,6 +158,19 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: width * 0.045, // 4.5% of screen width
     lineHeight: height * 0.03, // Adjust line height as needed
+  },
+  summaryButton: {
+    marginTop: 20,
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignSelf: "flex-start", // Align to the start (left)
+  },
+  summaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

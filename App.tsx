@@ -1,3 +1,4 @@
+// App.tsx
 import { StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider as PaperProvider } from "react-native-paper";
@@ -9,6 +10,7 @@ import Home1 from "./pages/Home1";
 import Article1 from "./pages/Article1";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ArticleSummary from "./pages/ArticleSummary"; // Import the new component
 import { StatusBar } from "react-native";
 import { initializeStorage, isAuthenticated } from "./services/AuthService";
 
@@ -24,6 +26,7 @@ export type RootStackParamList = {
     articleAuthor?: string;
     articleDescription?: string;
   };
+  ArticleSummary: { summary: string }; // Add the new route
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -63,6 +66,7 @@ export default function App() {
             <Stack.Screen name="Register" component={Register} />
             <Stack.Screen name="Home" component={Home1} />
             <Stack.Screen name="Article" component={Article1} />
+            <Stack.Screen name="ArticleSummary" component={ArticleSummary} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>
