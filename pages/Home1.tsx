@@ -16,6 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App"; // Import the types from App.tsx
 import { logout } from "../services/AuthService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -45,16 +46,62 @@ const Home1 = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState("User");
+  const [userId, setUserId] = useState<number | null>(null); // Add state for user ID
 
   const YOUR_COMPUTER_IP = "192.168.0.106";
+  const EXPRESS_PORT = 8080; // Express server port
+  const PYTHON_PORT = 8000; // Python server port
 
   useEffect(() => {
     // Get current user info
-    const userJSON = global.appStorage?.getItem("currentUser");
-    if (userJSON) {
-      const user = JSON.parse(userJSON);
-      setUsername(user.name || "User");
-    }
+    const getUserData = async () => {
+      try {
+        // Try to get user from AsyncStorage
+        const userJSON = await AsyncStorage.getItem("currentUser");
+        console.log("Retrieved from AsyncStorage:", userJSON);
+        
+        if (userJSON) {
+          const user = JSON.parse(userJSON);
+          setUsername(user.name || "User");
+          setUserId(user.id); // Store the user ID
+          console.log("User loaded:", user.name, "ID:", user.id);
+        } else {
+          console.warn("No user found in AsyncStorage");
+          
+          // Attempt to manually check if there's a logged in user via the server
+          try {
+            const response = await fetch(`http://${YOUR_COMPUTER_IP}:${EXPRESS_PORT}/check-session`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (response.ok) {
+              const userData = await response.json();
+              if (userData.user) {
+                console.log("Retrieved user from server:", userData.user);
+                await AsyncStorage.setItem("currentUser", JSON.stringify(userData.user));
+                setUsername(userData.user.name || "User");
+                setUserId(userData.user.id);
+              } else {
+                console.warn("No active user session found");
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "Login" }],
+                });
+              }
+            }
+          } catch (sessionError) {
+            console.error("Error checking for active session:", sessionError);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+      }
+    };
+
+    getUserData();
 
     const updateGreetingAndDate = () => {
       const now = new Date();
@@ -92,7 +139,7 @@ const Home1 = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://${YOUR_COMPUTER_IP}:8000/news`); // Fetch from /news
+        const response = await fetch(`http://${YOUR_COMPUTER_IP}:${PYTHON_PORT}/news`); // Fetch from Python server
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -114,10 +161,10 @@ const Home1 = () => {
     setError(null);
     try {
       const response = await fetch(
-        `http://${YOUR_COMPUTER_IP}:8000/article?link=${encodeURIComponent(
+        `http://${YOUR_COMPUTER_IP}:${PYTHON_PORT}/article?link=${encodeURIComponent(
           link
         )}`
-      );
+      ); // Use Python server
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -146,12 +193,34 @@ const Home1 = () => {
       },
       {
         text: "Logout",
-        onPress: () => {
-          logout();
-          navigation.reset({
-            index: 0,
-            routes: [{ name: "Login" }],
-          });
+        onPress: async () => {
+          try {
+            // Clear the current user from AsyncStorage
+            await AsyncStorage.removeItem("currentUser");
+            console.log("Cleared user data from AsyncStorage");
+            
+            // Attempt to logout from server
+            await fetch(`http://${YOUR_COMPUTER_IP}:${EXPRESS_PORT}/logout`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            // Then call the logout function and navigate
+            logout();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
+          } catch (error) {
+            console.error("Error during logout:", error);
+            // Even if there's an error, try to navigate away
+            navigation.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
+          }
         },
       },
     ]);
@@ -163,35 +232,112 @@ const Home1 = () => {
   };
 
   // --- Ellipsis Button Handlers ---
-  const handleEllipsisPress = () => {
+  const handleEllipsisPress = (category: string) => {
+    if (!userId) {
+      Alert.alert("Error", "Please wait while we finish loading your profile");
+      return;
+    }
+  
     Alert.alert(
-      "Article Interest", // Title
-      "Are you interested in these types of articles?", // Message
+      "Article Interest", 
+      "Are you interested in these types of articles?", 
       [
         {
-          text: "Yes",
+          text: "Cancel",
+          style: "cancel",
           onPress: () => {
-            // Placeholder: Add your logic for "Yes" here
-            console.log("User is interested");
+            console.log("User canceled");
+          },
+        },
+        {
+          text: "Yes",
+          onPress: async () => {
+            try {
+              // Check if we have userId in state
+              if (!userId) {
+                // Try to get user ID from AsyncStorage again
+                const userJSON = await AsyncStorage.getItem("currentUser");
+                let id = null;
+                
+                if (userJSON) {
+                  const user = JSON.parse(userJSON);
+                  id = user.id;
+                  setUserId(id); // Update state
+                }
+                
+                if (!id) {
+                  console.error("No user ID available");
+                  Alert.alert("Error", "You need to be logged in to set preferences");
+                  return;
+                }
+              }
+              
+              console.log(`Sending preference update for user ID: ${userId}, category: ${category}`);
+  
+              // Ensure userId is a number
+              const userIdNum = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+              
+              // Log the exact request you're sending
+              const requestBody = JSON.stringify({
+                userId: userIdNum,
+                category: category
+              });
+              console.log("Request body:", requestBody);
+              
+              // Send preference to server
+              const response = await fetch(`http://${YOUR_COMPUTER_IP}:${EXPRESS_PORT}/preferences`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Accept": "application/json"
+                },
+                body: requestBody,
+              });
+              
+              // Log the response status
+              console.log("Response status:", response.status);
+              console.log("Response headers:", JSON.stringify([...response.headers.entries()]));
+              
+              // Check the content type to determine how to parse the response
+              const contentType = response.headers.get("content-type");
+              
+              if (contentType && contentType.includes("application/json")) {
+                // Parse as JSON if the content type is application/json
+                const data = await response.json();
+                
+                if (!response.ok) {
+                  throw new Error(data.message || "Failed to update preferences");
+                }
+                
+                console.log(`Added ${category} to user preferences`);
+                Alert.alert("Success", `Added ${category} to your interests!`);
+              } else {
+                // Parse as text for non-JSON responses
+                const text = await response.text();
+                console.log("Response body (text):", text);
+                
+                if (response.ok) {
+                  // If the status was OK despite not being JSON, still treat as success
+                  console.log(`Added ${category} to user preferences (with text response)`);
+                  Alert.alert("Success", `Added ${category} to your interests!`);
+                } else {
+                  throw new Error("Server returned an invalid response format");
+                }
+              }
+            } catch (error: any) {
+              console.error("Error updating preferences:", error);
+              Alert.alert("Error", error.message || "Failed to update your preferences");
+            }
           },
         },
         {
           text: "No",
           onPress: () => {
-            // Placeholder: Add your logic for "No" here
-            console.log("User is not interested");
-          },
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => {
-            // Placeholder: Add your logic for "Cancel" here (usually nothing)
-            console.log("User canceled");
+            console.log("User is not interested in:", category);
           },
         },
       ],
-      { cancelable: true } // Allow dismissing the alert by tapping outside
+      { cancelable: true }
     );
   };
 
@@ -282,12 +428,7 @@ const Home1 = () => {
                       {/*  <Text style={styles.newsTime}>• {item.time}</Text> */}
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={styles.ellipsisBtn}
-                    onPress={handleEllipsisPress}
-                  >
-                    <Text style={styles.ellipsisText}>•••</Text>
-                  </TouchableOpacity>
+                  
                 </View>
               ))}
             </View>

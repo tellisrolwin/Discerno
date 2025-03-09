@@ -20,6 +20,14 @@ const pool = new Pool({
 app.use(cors()); // Enable CORS for all origins (for development)
 app.use(express.json()); // Parse JSON request bodies
 
+app.use((err, req, res, next) => {
+    console.error("Express error:", err);
+    res.status(500).json({
+      message: "Server error",
+      error: err.message
+    });
+  });
+
 // --- Routes ---
 
 // Register Route
@@ -35,6 +43,12 @@ app.post("/register", async (req, res) => {
     const result = await pool.query(
       "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email",
       [name, email, hashedPassword]
+    );
+    
+    // Initialize preferences for the new user
+    await pool.query(
+      "INSERT INTO preferences (id, categories) VALUES ($1, $2)",
+      [result.rows[0].id, []]
     );
 
     // 3. Send back the newly created user (without the password!)
@@ -76,18 +90,30 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Logout Route
+app.post("/logout", (req, res) => {
+  // In a real application with sessions, you'd destroy the session here
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
+// Check Session Route - For checking if a user is currently logged in
+app.get("/check-session", async (req, res) => {
+  // In a real application with sessions, you'd check the session here
+  // For now, just return a 401 to indicate no active session
+  res.status(401).json({ message: "No active session" });
+});
+
 // --- News Route ---
 app.get("/news", async (req, res) => {
   try {
-    // Placeholder data (replace with your actual news data fetching)
+    // Your actual API call or database query would go here
+    // For now, we'll use simplified placeholder data
     const newsData = {
       Technology: [
         {
-          title:
-            "Samsung's Galaxy S24 Ultra is a subtle refinement of a fantastic phone",
+          title: "Samsung's Galaxy S24 Ultra is a subtle refinement of a fantastic phone",
           link: "https://www.theverge.com/24039691/samsung-galaxy-s24-ultra-review",
-          summary:
-            "Samsung’s Galaxy S24 Ultra is a subtle refinement of a very good phone formula. It’s not cheap, but it comes with a lot of features and one of the best screens I’ve ever seen.",
+          summary: "Samsung's Galaxy S24 Ultra is a subtle refinement of a very good phone formula.",
           source: "Verge",
         },
       ],
@@ -95,8 +121,7 @@ app.get("/news", async (req, res) => {
         {
           title: "Microsoft briefly hit a $3 trillion market cap",
           link: "https://www.theverge.com/2024/1/24/24049951/microsoft-3-trillion-market-cap-intraday-trading",
-          summary:
-            "Microsoft briefly hit a $3 trillion market cap for the first time during trading today, before settling back down slightly below that historic mark. It took Microsoft just over two years to go from $2 trillion to $3 trillion, after taking more than 33 years to reach its first trillion-dollar valuation.",
+          summary: "Microsoft briefly hit a $3 trillion market cap for the first time during trading today.",
           source: "Verge",
         },
       ],
@@ -104,23 +129,21 @@ app.get("/news", async (req, res) => {
         {
           title: "Trump wins New Hampshire primary",
           link: "https://www.theverge.com/2024/1/23/24048817/trump-wins-new-hampshire-primary",
-          summary:
-            "Donald Trump has won the Republican primary in New Hampshire, according to AP calls of the race, marking another key win for the former president in his bid to retake the White House.",
+          summary: "Donald Trump has won the Republican primary in New Hampshire.",
           source: "Verge",
         },
       ],
       Sports: [
         {
-          title: "Taylor Swift attends",
-          link: "https://www.theverge.com/2024/1/23/24048817/trump-wins-new-hampshire-primary",
-          summary:
-            "Taylor Swift attends as a spectator, causing shares to rise drastically.",
+          title: "Taylor Swift attends Chiefs game",
+          link: "https://example.com/taylor-swift-chiefs-game",
+          summary: "Taylor Swift attends as a spectator, causing shares to rise drastically.",
           source: "Verge",
         },
       ],
     };
 
-    res.json(newsData); // Corrected this line
+    res.json(newsData);
   } catch (error) {
     console.error("Error fetching news:", error);
     res.status(500).json({ message: "Failed to fetch news" });
@@ -131,42 +154,111 @@ app.get("/article", async (req, res) => {
   try {
     const { link } = req.query;
 
-    // Very simple placeholder (replace with your actual article fetching logic)
-    let articleContent = "";
-    if (
-      link ===
-      "https://www.theverge.com/24039691/samsung-galaxy-s24-ultra-review"
-    ) {
-      articleContent =
-        "Samsung’s Galaxy S24 Ultra is a subtle refinement of a very good phone formula. It’s not cheap, but it comes with a lot of features and one of the best screens I’ve ever seen. There’s a titanium frame! You can circle stuff with the S Pen to search for it! The telephoto camera has more megapixels! All of this adds up to a phone that offers an unmatched experience — provided you’re down to pay for it.";
-    } else if (
-      link ===
-      "https://www.theverge.com/2024/1/24/24049951/microsoft-3-trillion-market-cap-intraday-trading"
-    ) {
-      articleContent =
-        "Microsoft briefly hit a $3 trillion market cap for the first time during trading today, before settling back down slightly below that historic mark. It took Microsoft just over two years to go from $2 trillion to $3 trillion, after taking more than 33 years to reach its first trillion-dollar valuation.";
-    } else if (
-      link ===
-      "https://www.theverge.com/2024/1/23/24048817/trump-wins-new-hampshire-primary"
-    ) {
-      articleContent =
-        "Donald Trump has won the Republican primary in New Hampshire, according to AP calls of the race, marking another key win for the former president in his bid to retake the White House.";
-    } else if (
-      link ===
-      "https://www.theverge.com/2024/1/23/24048817/trump-wins-new-hampshire-primary"
-    ) {
-      articleContent =
-        "Donald Trump has won the Republican primary in New Hampshire, according to AP calls of the race, marking another key win for the former president in his bid to retake the White House.";
-    } else {
-      articleContent = "Article content not found.";
-    }
+    // Simple article content lookup
+    // In a real app, you would fetch this from a database or external API
+    const articleDatabase = {
+      "https://www.theverge.com/24039691/samsung-galaxy-s24-ultra-review": 
+        "Samsung's Galaxy S24 Ultra is a subtle refinement of a very good phone formula.",
+      "https://www.theverge.com/2024/1/24/24049951/microsoft-3-trillion-market-cap-intraday-trading": 
+        "Microsoft briefly hit a $3 trillion market cap for the first time during trading today.",
+      "https://www.theverge.com/2024/1/23/24048817/trump-wins-new-hampshire-primary": 
+        "Donald Trump has won the Republican primary in New Hampshire.",
+      "https://example.com/taylor-swift-chiefs-game": 
+        "Taylor Swift attends as a spectator at the Chiefs game."
+    };
 
+    const articleContent = articleDatabase[link] || "Article content not found.";
     res.json({ article: articleContent });
   } catch (error) {
     console.error("Error fetching article:", error);
     res.status(500).json({ message: "Failed to fetch article" });
   }
 });
+
+// Add new route to update user preferences
+app.post("/preferences", async (req, res) => {
+    try {
+      const { userId, category } = req.body;
+      
+      console.log("Received preference update request:", req.body);
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      // Explicitly set the content type to application/json
+      res.setHeader('Content-Type', 'application/json');
+      
+      // Log received data
+      console.log(`Received preference update: User ID: ${userId}, Category: ${category}`);
+      
+      // First check if the user exists
+      const userCheck = await pool.query(
+        "SELECT id FROM users WHERE id = $1",
+        [userId]
+      );
+      
+      if (userCheck.rows.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      console.log(`User ${userId} verified in database`);
+      
+      // Get current preferences
+      const currentPrefs = await pool.query(
+        "SELECT categories FROM preferences WHERE id = $1",
+        [userId]
+      );
+      
+      console.log("Current preferences query result:", currentPrefs.rows);
+      
+      if (currentPrefs.rows.length === 0) {
+        // Initialize preferences if they don't exist
+        console.log(`Creating new preferences for user ${userId}`);
+        await pool.query(
+          "INSERT INTO preferences (id, categories) VALUES ($1, $2)",
+          [userId, [category]]
+        );
+        console.log(`Created preferences with category ${category}`);
+      } else {
+        // Update existing preferences if the category is not already in the array
+        const existingCategories = currentPrefs.rows[0].categories || [];
+        console.log("Existing categories:", existingCategories);
+        
+        if (!existingCategories.includes(category)) {
+          const updatedCategories = [...existingCategories, category];
+          console.log(`Updating preferences to: ${updatedCategories}`);
+          
+          await pool.query(
+            "UPDATE preferences SET categories = $1 WHERE id = $2",
+            [updatedCategories, userId]
+          );
+          console.log("Update successful");
+        } else {
+          console.log(`Category ${category} already in preferences`);
+        }
+      }
+      
+      // IMPORTANT: Return a JSON response
+      return res.status(200).json({ 
+        message: "Preferences updated successfully",
+        success: true
+      });
+      
+    } catch (error) {
+      console.error("Error in /preferences route:", error);
+      
+      // IMPORTANT: Return a JSON error response
+      // Explicitly set the content type to application/json
+      res.setHeader('Content-Type', 'application/json');
+      
+      return res.status(500).json({ 
+        message: "Failed to update preferences",
+        error: error.message,
+        success: false
+      });
+    }
+  });
 
 // --- Start the Server ---
 app.listen(port, () => {

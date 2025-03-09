@@ -15,6 +15,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const YOUR_COMPUTER_IP = "192.168.0.106";
 
@@ -62,8 +63,8 @@ const Login = () => {
       })
       .then((data) => {
         // Store logged in status and user info
-        global.appStorage?.setItem("isLoggedIn", "true");
-        global.appStorage?.setItem("currentUser", JSON.stringify(data.user));
+        AsyncStorage.setItem("isLoggedIn", "true");
+        AsyncStorage.setItem("currentUser", JSON.stringify(data.user));
 
         // Navigate to Home
         navigation.reset({
