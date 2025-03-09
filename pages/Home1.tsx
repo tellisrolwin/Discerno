@@ -37,7 +37,7 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, "Home">;
 
 const Home1 = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const [selectedFilter, setSelectedFilter] = useState("technology");
+  const [selectedFilter, setSelectedFilter] = useState("All");
   const [greeting, setGreeting] = useState("");
   const [currentDate, setCurrentDate] = useState("");
   const [newsData, setNewsData] = useState<CategorizedHeadlines>({});
