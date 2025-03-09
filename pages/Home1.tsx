@@ -241,8 +241,14 @@ const Home1 = () => {
   };
 
   const handleSparklePress = () => {
-    // Placeholder action, add any action u want here.
-    Alert.alert("✨", "Sparkle Pressed!");
+    // Navigate to the Aggregator screen with the userId
+    if (userId) {
+      navigation.navigate("Aggregator", {
+        userId: userId
+      });
+    } else {
+      Alert.alert("Error", "Please wait while we finish loading your profile");
+    }
   };
 
   // --- Ellipsis Button Handlers ---

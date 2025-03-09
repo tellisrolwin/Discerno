@@ -10,7 +10,8 @@ import Home1 from "./pages/Home1";
 import Article1 from "./pages/Article1";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import ArticleSummary from "./pages/ArticleSummary"; // Import the new component
+import ArticleSummary from "./pages/ArticleSummary";
+import Aggregator from "./pages/Aggregator"; // Import the new component
 import { StatusBar } from "react-native";
 import { initializeStorage, isAuthenticated } from "./services/AuthService";
 
@@ -27,7 +28,10 @@ export type RootStackParamList = {
     articleDescription?: string;
     articleCategory?: string;
   };
-  ArticleSummary: { summary: string }; // Add the new route
+  ArticleSummary: { summary: string };
+  Aggregator: {
+    userId: number | null;
+  }; // Add the new route
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -68,6 +72,7 @@ export default function App() {
             <Stack.Screen name="Home" component={Home1} />
             <Stack.Screen name="Article" component={Article1} />
             <Stack.Screen name="ArticleSummary" component={ArticleSummary} />
+            <Stack.Screen name="Aggregator" component={Aggregator} />
           </Stack.Navigator>
         </NavigationContainer>
       </PaperProvider>

@@ -86,6 +86,32 @@ app.get("/check-session", async (req, res) => {
   res.status(401).json({ message: "No active session" });
 });
 
+app.get("/user-preferences", async (req, res) => {
+    try {
+        const userId = req.query.userId; // Get userId from query parameters
+
+        if (!userId) {
+            return res.status(400).json({ message: "User ID is required" });
+        }
+
+        // Query the preferences table using the correct ID column
+        const result = await pool.query(
+            "SELECT categories FROM preferences WHERE id = $1",
+            [userId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "User preferences not found", categories: [] }); // Return empty array
+        }
+
+        const preferences = result.rows[0];
+        res.json({ categories: preferences.categories }); // Correctly return the categories
+    } catch (error) {
+        console.error("Error fetching user preferences:", error);
+        res.status(500).json({ message: "Server error fetching preferences" });
+    }
+});
+
 app.post("/preferences", async (req, res) => {
     try {
       const { userId, category } = req.body;
