@@ -16,6 +16,8 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App";
 
+const YOUR_COMPUTER_IP = "192.168.0.106";
+
 const { width: screenWidth } = Dimensions.get("window");
 const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
 const vh = (percentageHeight: number) =>
@@ -48,40 +50,39 @@ const Register = () => {
 
     setIsLoading(true);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Get existing users from memory
-      const usersJSON = global.appStorage?.getItem("users");
-      const users = usersJSON ? JSON.parse(usersJSON) : [];
-
-      // Check if email already exists
-      const userExists = users.some(
-        (user: { email: string }) => user.email === email
-      );
-
-      if (userExists) {
-        Alert.alert("Error", "Email already registered");
+    // Connect to your server for registration
+    fetch(`http://${YOUR_COMPUTER_IP}:8080/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        Alert.alert("Success", "Registration successful. Please login.", [
+          {
+            text: "OK",
+            onPress: () => navigation.navigate("Login"),
+          },
+        ]);
+      })
+      .catch((error) => {
+        Alert.alert("Error", "Registration failed. Please try again.");
+        console.error("Error:", error);
+      })
+      .finally(() => {
         setIsLoading(false);
-        return;
-      }
-
-      // Add new user
-      const newUser = { name, email, password };
-      users.push(newUser);
-
-      // Save to memory
-      global.appStorage?.setItem("users", JSON.stringify(users));
-
-      // Show success message and redirect to login
-      Alert.alert("Success", "Registration successful. Please login.", [
-        {
-          text: "OK",
-          onPress: () => navigation.navigate("Login"),
-        },
-      ]);
-
-      setIsLoading(false);
-    }, 1000);
+      });
   };
 
   return (

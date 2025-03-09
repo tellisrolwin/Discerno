@@ -1,63 +1,77 @@
-// services/AuthService.ts
+// AuthService.ts
+import { Alert } from "react-native";
 
-// Define a type for our simplified localStorage
-interface SimpleStorage {
-  _data: Record<string, string>;
-  setItem(key: string, value: string): void;
-  getItem(key: string): string | null;
-  removeItem(key: string): void;
-  clear(): void;
-}
+const YOUR_COMPUTER_IP = "192.168.0.106:8080"; // REPLACE WITH YOUR ACTUAL IP
 
-// Create a namespace to avoid conflicts with the actual window.localStorage
-declare global {
-  var appStorage: SimpleStorage;
-}
+// Utility function to handle API responses
+const handleApiResponse = async (response: Response) => {
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(
+      errorData.message || `HTTP error! status: ${response.status}`
+    );
+  }
+  return response.json();
+};
 
+// Initialize storage (no-op now, as we're using a database)
 export const initializeStorage = () => {
-  // Initialize storage if it doesn't exist in the global scope
-  if (!global.appStorage) {
-    global.appStorage = {
-      _data: {},
-      setItem(key: string, value: string) {
-        this._data[key] = value;
-      },
-      getItem(key: string) {
-        return this._data[key] || null;
-      },
-      removeItem(key: string) {
-        delete this._data[key];
-      },
-      clear() {
-        this._data = {};
-      },
-    };
+  // No initialization needed for the database.
+};
 
-    // Initialize with a test user
-    const testUsers = [
-      {
-        name: "test1",
-        email: "tellisrolwin",
-        password: "3#_s8/_aXSpV5Sf",
+export const registerUser = async (
+  name: string,
+  email: string,
+  password: string
+) => {
+  try {
+    const response = await fetch(`http://${YOUR_COMPUTER_IP}:8000/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      {
-        name: "test2",
-        email: "test",
-        password: "test",
-      },
-    ];
+      body: JSON.stringify({ name, email, password }),
+    });
 
-    global.appStorage.setItem("users", JSON.stringify(testUsers));
+    return handleApiResponse(response);
+  } catch (error: any) {
+    Alert.alert("Registration Error", error.message);
+    throw error; // Re-throw to be handled by calling component
   }
 };
 
-// Add this to check if user is logged in
-export const isAuthenticated = () => {
-  return global.appStorage?.getItem("isLoggedIn") === "true";
+export const loginUser = async (email: string, password: string) => {
+  try {
+    const response = await fetch(`http://${YOUR_COMPUTER_IP}:8000/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await handleApiResponse(response);
+
+    // Store user data in global scope (for simplicity in this example)
+    if (data.user) {
+      global.currentUser = data.user; // Store the entire user object
+      global.isLoggedIn = true;
+    }
+
+    return data;
+  } catch (error: any) {
+    Alert.alert("Login Error", error.message);
+    throw error;
+  }
 };
 
-// Logout functionality
 export const logout = () => {
-  global.appStorage?.removeItem("isLoggedIn");
-  global.appStorage?.removeItem("currentUser");
+  // Clear user data (using global scope for simplicity)
+  global.currentUser = null;
+  global.isLoggedIn = false;
+  // No need to interact with the database on logout
+};
+
+export const isAuthenticated = () => {
+  return !!global.isLoggedIn;
 };

@@ -16,6 +16,8 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App";
 
+const YOUR_COMPUTER_IP = "192.168.0.106";
+
 const { width: screenWidth } = Dimensions.get("window");
 const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
 const vh = (percentageHeight: number) =>
@@ -41,34 +43,41 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      // Get users from memory
-      const usersJSON = global.appStorage?.getItem("users");
-      const users = usersJSON ? JSON.parse(usersJSON) : [];
-
-      // Find user
-      const user = users.find(
-        (u: { email: string; password: string }) =>
-          u.email === email && u.password === password
-      );
-
-      if (user) {
-        // Store logged in status
+    // Connect to your server for login
+    fetch(`http://${YOUR_COMPUTER_IP}:8080/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        password,
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Invalid credentials");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Store logged in status and user info
         global.appStorage?.setItem("isLoggedIn", "true");
-        global.appStorage?.setItem("currentUser", JSON.stringify(user));
+        global.appStorage?.setItem("currentUser", JSON.stringify(data.user));
 
         // Navigate to Home
         navigation.reset({
           index: 0,
           routes: [{ name: "Home" }],
         });
-      } else {
+      })
+      .catch((error) => {
         Alert.alert("Error", "Invalid email or password");
-      }
-
-      setIsLoading(false);
-    }, 1000);
+        console.error("Error:", error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
