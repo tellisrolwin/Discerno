@@ -1,3 +1,5 @@
+// Home1.tsx (Revised)
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -27,6 +29,7 @@ interface Headline {
   title: string;
   link: string;
   summary: string;
+  source: string; // Add source
 }
 
 interface CategorizedHeadlines {
@@ -91,7 +94,7 @@ const Home1 = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`http://${YOUR_COMPUTER_IP}:8000/news`);
+        const response = await fetch(`http://${YOUR_COMPUTER_IP}:8000/news`); // Fetch from /news
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -212,6 +215,7 @@ const Home1 = () => {
         {Object.keys(newsData)
           .filter(
             (category) =>
+              selectedFilter === "All" ||
               selectedFilter.toLowerCase() === category.toLowerCase()
           ) //for the picker to select
           .map((category: string) => (
@@ -229,7 +233,7 @@ const Home1 = () => {
                     </TouchableOpacity>
                     <View style={styles.newsSource}>
                       {/* No source logo for now */}
-                      <Text style={styles.newsSourceName}>BBC News</Text>
+                      <Text style={styles.newsSourceName}>{item.source}</Text>
                       {/*  <Text style={styles.newsTime}>• {item.time}</Text> */}
                     </View>
                   </View>

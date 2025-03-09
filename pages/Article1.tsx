@@ -41,11 +41,6 @@ const Article1 = () => {
 
   const [loadingSummary, setLoadingSummary] = useState(false);
 
-  // Construct the author byline. Handle cases where articleAuthor might be null/undefined.
-  const authorByline = articleAuthor
-    ? `By ${articleAuthor}, a reporter with five years of experience covering consumer tech releases, EU tech policy, online platforms, and mechanical keyboards.`
-    : "";
-
   const fetchSummary = async () => {
     setLoadingSummary(true);
     try {
