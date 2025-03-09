@@ -1,5 +1,3 @@
-// Home1.tsx (Revised)
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -159,6 +157,11 @@ const Home1 = () => {
     ]);
   };
 
+  const handleSparklePress = () => {
+    // Placeholder action, add any action u want here.
+    Alert.alert("✨", "Sparkle Pressed!");
+  };
+
   // --- Conditional Rendering based on loading and data ---
   if (loading) {
     return (
@@ -190,8 +193,17 @@ const Home1 = () => {
             <Text style={styles.username}>{username}</Text>
           </View>
           <View style={styles.sparkleContainer}>
-            <TouchableOpacity onPress={handleLogout}>
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={styles.logoutButtonContainer}
+            >
               <Text style={styles.logoutButton}>Logout</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSparklePress}
+              style={styles.sparkleButtonContainer}
+            >
+              <Text style={styles.sparkleButton}>✨</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -295,8 +307,12 @@ const styles = StyleSheet.create({
     marginTop: vh(0.5),
   },
   sparkleContainer: {
-    flexDirection: "column",
-    alignItems: "center",
+    flexDirection: "column", // Stack buttons vertically
+    alignItems: "flex-end", // Align to the right
+    //padding: vw(2),
+  },
+  logoutButtonContainer: {
+    marginBottom: vh(1), // Add some space between buttons
   },
   logoutButton: {
     backgroundColor: "#292d39",
@@ -305,6 +321,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: "hidden",
     fontSize: vw(3),
+  },
+  sparkleButton: {
+    fontSize: vw(6),
+    paddingHorizontal: vw(2),
+    paddingTop: vh(1),
+  },
+  sparkleButtonContainer: {
+    // Add styles as needed
   },
   filter: {
     paddingHorizontal: vw(4),
