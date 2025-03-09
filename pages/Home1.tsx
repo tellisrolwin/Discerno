@@ -28,7 +28,8 @@ interface Headline {
   title: string;
   link: string;
   summary: string;
-  source: string; // Add source
+  source: string;
+  category: string;
 }
 
 interface CategorizedHeadlines {
@@ -144,7 +145,20 @@ const Home1 = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data: CategorizedHeadlines = await response.json();
-        setNewsData(data);
+
+        // --- THIS IS THE "SECOND CHANGE" --- Start
+        // Add category to each headline object
+        const categorizedData: CategorizedHeadlines = {};
+        for (const category in data) {
+          categorizedData[category] = data[category].map((item) => ({
+            ...item,  // Spread the existing item properties
+            category: category, // Add the category here
+          }));
+        }
+        setNewsData(categorizedData);
+        // --- "SECOND CHANGE" --- End
+
+
       } catch (error: any) {
         console.error("Could not fetch news:", error);
         setError(error.message || "Failed to load news.");
@@ -156,7 +170,7 @@ const Home1 = () => {
     fetchNews();
   }, []);
 
-  const fetchArticle = async (link: string, title: string) => {
+  const fetchArticle = async (link: string, title: string, category: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -175,7 +189,7 @@ const Home1 = () => {
         articleLink: link,
         articleTitle: title,
         articleDescription: data.article,
-        articleAuthor: "Jon Porter", // You might want to get this from your API
+        articleCategory: category,
       });
     } catch (error: any) {
       console.error("Could not fetch article:", error);
@@ -417,7 +431,7 @@ const Home1 = () => {
                   <View style={styles.newsContent}>
                     <TouchableOpacity
                       onPress={() => {
-                        fetchArticle(item.link, item.title);
+                        fetchArticle(item.link, item.title, item.category);
                       }}
                     >
                       <Text style={styles.newsTitle}>{item.title}</Text>

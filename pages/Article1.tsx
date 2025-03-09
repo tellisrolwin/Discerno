@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Dimensions,
   TouchableOpacity,
   ActivityIndicator,
-  Modal, // Import Modal
+  Modal,
   Alert,
 } from "react-native";
 import {
@@ -18,11 +18,11 @@ import {
   NavigationProp,
 } from "@react-navigation/native";
 import { RootStackParamList } from "../App";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width, height } = Dimensions.get("window");
 
 type ArticleScreenRouteProp = RouteProp<RootStackParamList, "Article">;
-
 type ArticleScreenNavigationProp = NavigationProp<
   RootStackParamList,
   "Article"
@@ -37,10 +37,32 @@ const Article1 = () => {
     articleImage,
     articleAuthor,
     articleDescription,
+    articleCategory, // Ensure this is being passed
   } = route.params;
 
   const [loadingSummary, setLoadingSummary] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false); // State for modal visibility
+  const [modalVisible, setModalVisible] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [savingPreference, setSavingPreference] = useState(false);
+
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem("userId");
+        console.log("Retrieved storedUserId:", storedUserId); // Log retrieved value
+        if (storedUserId) {
+          setUserId(parseInt(storedUserId, 10));
+          console.log(`User ID set: ${parseInt(storedUserId, 10)}`);
+        } else {
+          console.log("No user ID found in AsyncStorage");
+        }
+      } catch (error) {
+        console.error("Error retrieving user ID:", error);
+      }
+    };
+
+    getUserId();
+  }, []);
 
   const fetchSummary = async () => {
     setLoadingSummary(true);
@@ -69,14 +91,67 @@ const Article1 = () => {
   };
 
   const handleEllipsisPress = () => {
-    setModalVisible(true); // Show the modal
+    setModalVisible(true);
   };
 
-  const handleModalResponse = (response: string) => {
-    setModalVisible(false); // Hide the modal
-    console.log(`User response: ${response}`); // Dummy logic
-    // You can add more complex logic here, like sending the response to a server
+  const handleModalResponse = async (response: string) => {
+    setModalVisible(false);
+    console.log(`User response: ${response}`);
+    console.log(`Current userId: ${userId}, articleCategory: ${articleCategory}`); // Log before API call
+
+    if (response === "yes" && userId && articleCategory) {
+      try {
+        setSavingPreference(true);
+        console.log(`Saving preference: User ID=${userId}, Category=${articleCategory}`);
+
+        const saveResponse = await fetch("http://192.168.0.106:8000/preferences", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: userId,
+            category: articleCategory,
+          }),
+        });
+
+        console.log(`Server response status: ${saveResponse.status}`);
+
+        if (!saveResponse.ok) {
+          const errorText = await saveResponse.text();
+          console.error(`HTTP error with status ${saveResponse.status}: ${errorText}`);
+          throw new Error(`HTTP error! Status: ${saveResponse.status}, Details: ${errorText}`);
+        }
+
+        const result = await saveResponse.json();
+        console.log("Preference saved successfully:", result);
+
+        Alert.alert(
+          "Preference Saved",
+          `We'll show you more ${articleCategory} articles!`,
+          [{ text: "OK" }]
+        );
+      } catch (error) {
+        console.error("Error saving preference:", error);
+        Alert.alert(
+          "Error",
+          "Failed to save your preference. Please try again.",
+          [{ text: "OK" }]
+        );
+      } finally {
+        setSavingPreference(false);
+      }
+    } else if (response === "yes") {
+      console.error(`Missing data - User ID: ${userId}, Category: ${articleCategory}`);
+      Alert.alert(
+        "Error",
+        "Missing user ID or article category. Please try again later.",
+        [{ text: "OK" }]
+      );
+    }
   };
+
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -109,7 +184,7 @@ const Article1 = () => {
       </View>
 
       <Modal
-        animationType="fade" // Use fade for a simple appearance/disappearance
+        animationType="fade"
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
@@ -119,24 +194,31 @@ const Article1 = () => {
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
             <Text style={styles.modalText}>
-              Are you interested in these types of articles?
+              Are you interested in {articleCategory ? articleCategory : "these types of"} articles?
             </Text>
             <View style={styles.modalButtonContainer}>
               <TouchableOpacity
                 style={[styles.button, styles.buttonCancel]}
                 onPress={() => handleModalResponse("cancel")}
+                disabled={savingPreference}
               >
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonYes]}
                 onPress={() => handleModalResponse("yes")}
+                disabled={savingPreference}
               >
-                <Text style={styles.textStyle}>Yes</Text>
+                {savingPreference ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.textStyle}>Yes</Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonNo]}
                 onPress={() => handleModalResponse("no")}
+                disabled={savingPreference}
               >
                 <Text style={styles.textStyle}>No</Text>
               </TouchableOpacity>
@@ -146,6 +228,9 @@ const Article1 = () => {
       </Modal>
 
       <View style={styles.content}>
+        {articleCategory && (
+          <Text style={styles.category}>{articleCategory}</Text>
+        )}
         <Text style={styles.publication}>The Hindu</Text>
         <Text style={styles.title}>{articleTitle}</Text>
         {articleImage && (
@@ -187,6 +272,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: height * 0.01,
   },
+  category: {
+    color: "#4CAF50",
+    fontSize: width * 0.04,
+    marginBottom: height * 0.01,
+  },
   title: {
     color: "white",
     fontSize: width * 0.08,
@@ -210,14 +300,14 @@ const styles = StyleSheet.create({
     lineHeight: height * 0.03,
   },
   topRightContainer: {
-    alignItems: "flex-end", // Align children to the end (right)
+    alignItems: "flex-end",
   },
   summaryButton: {
     backgroundColor: "#007AFF",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    marginTop: 5, // Add some space between ellipsis and summary button
+    marginTop: 5,
   },
   summaryButtonText: {
     color: "#fff",
@@ -226,20 +316,17 @@ const styles = StyleSheet.create({
   },
   ellipsisButton: {
     padding: 10,
-    // Other styles
   },
   ellipsisButtonText: {
     color: "white",
     fontSize: 24,
     fontWeight: "bold",
   },
-
-  // Modal Styles
   centeredView: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalView: {
     margin: 20,
@@ -258,7 +345,7 @@ const styles = StyleSheet.create({
   },
   modalButtonContainer: {
     flexDirection: "row",
-    justifyContent: "space-around", // Distribute buttons evenly
+    justifyContent: "space-around",
     marginTop: 20,
     width: "100%",
   },
@@ -267,16 +354,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     elevation: 2,
-    marginHorizontal: 5, // Add horizontal margin for spacing
+    marginHorizontal: 5,
   },
   buttonCancel: {
-    backgroundColor: "#8E8E93", // Gray color for cancel
+    backgroundColor: "#8E8E93",
   },
   buttonYes: {
-    backgroundColor: "#007AFF", // Blue color for yes
+    backgroundColor: "#007AFF",
   },
   buttonNo: {
-    backgroundColor: "#FF3B30", // Red color for no
+    backgroundColor: "#FF3B30",
   },
   textStyle: {
     color: "white",

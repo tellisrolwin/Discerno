@@ -25,6 +25,7 @@ export type RootStackParamList = {
     articleImage?: string;
     articleAuthor?: string;
     articleDescription?: string;
+    articleCategory?: string;
   };
   ArticleSummary: { summary: string }; // Add the new route
 };

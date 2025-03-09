@@ -1,16 +1,16 @@
 // pages/Login.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -19,15 +19,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const YOUR_COMPUTER_IP = "192.168.0.106";
 
-const { width: screenWidth } = Dimensions.get("window");
-const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
-const vh = (percentageHeight: number) =>
-  Dimensions.get("window").height * (percentageHeight / 100);
-
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "Login"
 >;
+
+const { width: screenWidth } = Dimensions.get("window");
+const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
+const vh = (percentageHeight: number) =>
+  Dimensions.get("window").height * (percentageHeight / 100);
 
 const Login = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
@@ -35,7 +35,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // This function simulates authentication with in-memory storage
   const handleLogin = () => {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
@@ -44,7 +43,6 @@ const Login = () => {
 
     setIsLoading(true);
 
-    // Connect to your server for login
     fetch(`http://${YOUR_COMPUTER_IP}:8080/login`, {
       method: "POST",
       headers: {
@@ -62,11 +60,10 @@ const Login = () => {
         return response.json();
       })
       .then((data) => {
-        // Store logged in status and user info
         AsyncStorage.setItem("isLoggedIn", "true");
+        AsyncStorage.setItem("userId", String(data.user.id));
         AsyncStorage.setItem("currentUser", JSON.stringify(data.user));
 
-        // Navigate to Home
         navigation.reset({
           index: 0,
           routes: [{ name: "Home" }],
