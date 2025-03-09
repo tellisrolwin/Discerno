@@ -45,7 +45,7 @@ const Home1 = () => {
   const [error, setError] = useState<string | null>(null);
   const [username, setUsername] = useState("User");
 
-  const YOUR_COMPUTER_IP = "10.243.104.74";
+  const YOUR_COMPUTER_IP = "192.168.0.106";
 
   useEffect(() => {
     // Get current user info

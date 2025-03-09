@@ -1,4 +1,3 @@
-// Article1.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -51,7 +50,7 @@ const Article1 = () => {
     setLoadingSummary(true);
     try {
       const response = await fetch(
-        `http://10.243.104.74:8000/summary?link=${encodeURIComponent(
+        `http://192.168.0.106:8000/summary?link=${encodeURIComponent(
           articleLink
         )}`
       );
@@ -82,18 +81,6 @@ const Article1 = () => {
         >
           <Text style={styles.backButtonText}>← Back</Text>
         </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
-        <Text style={styles.publication}>BBC</Text>
-        <Text style={styles.title}>{articleTitle}</Text>
-        {/* <Text style={styles.author}>{authorByline}</Text> */}
-
-        {articleImage && (
-          <Image source={{ uri: articleImage }} style={styles.image} />
-        )}
-
-        <Text style={styles.bodyText}>{articleDescription}</Text>
         <TouchableOpacity
           style={styles.summaryButton}
           onPress={fetchSummary}
@@ -106,6 +93,18 @@ const Article1 = () => {
           )}
         </TouchableOpacity>
       </View>
+
+      <View style={styles.content}>
+        <Text style={styles.publication}>BBC</Text>
+        <Text style={styles.title}>{articleTitle}</Text>
+        {/* <Text style={styles.author}>{authorByline}</Text> */}
+
+        {articleImage && (
+          <Image source={{ uri: articleImage }} style={styles.image} />
+        )}
+
+        <Text style={styles.bodyText}>{articleDescription}</Text>
+      </View>
     </ScrollView>
   );
 };
@@ -116,12 +115,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212", // Dark background
   },
   header: {
+    flexDirection: "row", // Arrange items horizontally
+    justifyContent: "space-between", // Space between the back button and summary button
+    alignItems: "center", // Vertically center items
     paddingHorizontal: width * 0.05,
     paddingTop: height * 0.05,
     paddingBottom: height * 0.02,
   },
   backButton: {
     padding: 10,
+    // Other styles
   },
   backButtonText: {
     color: "#007AFF",
@@ -160,12 +163,12 @@ const styles = StyleSheet.create({
     lineHeight: height * 0.03, // Adjust line height as needed
   },
   summaryButton: {
-    marginTop: 20,
+    // marginTop: 20, // Removed marginTop
     backgroundColor: "#007AFF",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    alignSelf: "flex-start", // Align to the start (left)
+    // alignSelf: "flex-start", // Removed alignSelf
   },
   summaryButtonText: {
     color: "#fff",

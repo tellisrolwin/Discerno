@@ -36,9 +36,9 @@ export const initializeStorage = () => {
     // Initialize with a test user
     const testUsers = [
       {
-        name: "Test User",
-        email: "test@example.com",
-        password: "password123",
+        name: "test1",
+        email: "tellisrolwin",
+        password: "3#_s8/_aXSpV5Sf",
       },
     ];
 
