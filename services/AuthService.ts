@@ -40,6 +40,11 @@ export const initializeStorage = () => {
         email: "tellisrolwin",
         password: "3#_s8/_aXSpV5Sf",
       },
+      {
+        name: "test2",
+        email: "test",
+        password: "test",
+      },
     ];
 
     global.appStorage.setItem("users", JSON.stringify(testUsers));

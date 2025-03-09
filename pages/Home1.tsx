@@ -162,6 +162,39 @@ const Home1 = () => {
     Alert.alert("✨", "Sparkle Pressed!");
   };
 
+  // --- Ellipsis Button Handlers ---
+  const handleEllipsisPress = () => {
+    Alert.alert(
+      "Article Interest", // Title
+      "Are you interested in these types of articles?", // Message
+      [
+        {
+          text: "Yes",
+          onPress: () => {
+            // Placeholder: Add your logic for "Yes" here
+            console.log("User is interested");
+          },
+        },
+        {
+          text: "No",
+          onPress: () => {
+            // Placeholder: Add your logic for "No" here
+            console.log("User is not interested");
+          },
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => {
+            // Placeholder: Add your logic for "Cancel" here (usually nothing)
+            console.log("User canceled");
+          },
+        },
+      ],
+      { cancelable: true } // Allow dismissing the alert by tapping outside
+    );
+  };
+
   // --- Conditional Rendering based on loading and data ---
   if (loading) {
     return (
@@ -249,7 +282,10 @@ const Home1 = () => {
                       {/*  <Text style={styles.newsTime}>• {item.time}</Text> */}
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.ellipsisBtn}>
+                  <TouchableOpacity
+                    style={styles.ellipsisBtn}
+                    onPress={handleEllipsisPress}
+                  >
                     <Text style={styles.ellipsisText}>•••</Text>
                   </TouchableOpacity>
                 </View>
