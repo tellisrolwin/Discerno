@@ -49,7 +49,7 @@ const Home1 = () => {
   const [username, setUsername] = useState("User");
   const [userId, setUserId] = useState<number | null>(null); // Add state for user ID
 
-  const YOUR_COMPUTER_IP = "192.168.0.106";
+  const YOUR_COMPUTER_IP = "192.168.0.104";
   const EXPRESS_PORT = 8080; // Express server port
   const PYTHON_PORT = 8000; // Python server port
 
@@ -190,6 +190,7 @@ const Home1 = () => {
         articleTitle: title,
         articleDescription: data.article,
         articleCategory: category,
+        selectedFilter: selectedFilter,
       });
     } catch (error: any) {
       console.error("Could not fetch article:", error);

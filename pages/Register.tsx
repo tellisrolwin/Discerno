@@ -16,7 +16,7 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../App";
 
-const YOUR_COMPUTER_IP = "192.168.0.106";
+const YOUR_COMPUTER_IP = "192.168.0.104";
 
 const { width: screenWidth } = Dimensions.get("window");
 const vw = (percentageWidth: number) => screenWidth * (percentageWidth / 100);
@@ -35,11 +35,59 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // New state variables for validation errors
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  // Email validation function
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Function to validate password length
+  const validatePassword = (password: string) => {
+    return password.length >= 8;
+  };
+
+  // Handle email change with validation
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (text && !validateEmail(text)) {
+      setEmailError("Please enter a valid email address");
+    } else {
+      setEmailError("");
+    }
+  };
+
+  // Handle password change with validation
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (text && !validatePassword(text)) {
+      setPasswordError("Password must be at least 8 characters");
+    } else {
+      setPasswordError("");
+    }
+  };
 
   const handleRegister = () => {
-    // Basic validation
+    // Reset error messages
+    setEmailError("");
+    setPasswordError("");
+    
+    // Enhanced validation
     if (!name || !email || !password || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+
+    if (!validatePassword(password)) {
+      setPasswordError("Password must be at least 8 characters");
       return;
     }
 
@@ -110,26 +158,32 @@ const Register = () => {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, emailError ? styles.inputError : null]}
                 placeholder="Enter your email"
                 placeholderTextColor="#666"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={handleEmailChange}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              {emailError ? (
+                <Text style={styles.errorText}>{emailError}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Password</Text>
               <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
+                style={[styles.input, passwordError ? styles.inputError : null]}
+                placeholder="Enter your password (min. 8 characters)"
                 placeholderTextColor="#666"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={handlePasswordChange}
                 secureTextEntry
               />
+              {passwordError ? (
+                <Text style={styles.errorText}>{passwordError}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputContainer}>
@@ -145,9 +199,14 @@ const Register = () => {
             </View>
 
             <TouchableOpacity
-              style={styles.registerButton}
+              style={[
+                styles.registerButton,
+                (!validateEmail(email) || !validatePassword(password) || !name || !confirmPassword) 
+                  ? styles.disabledButton 
+                  : null
+              ]}
               onPress={handleRegister}
-              disabled={isLoading}
+              disabled={isLoading || !validateEmail(email) || !validatePassword(password) || !name || !confirmPassword}
             >
               <Text style={styles.registerButtonText}>
                 {isLoading ? "Creating Account..." : "Register"}
@@ -209,12 +268,25 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: vw(3.5),
   },
+  inputError: {
+    borderColor: "#FF3B30",
+    borderWidth: 1,
+  },
+  errorText: {
+    color: "#FF3B30",
+    fontSize: vw(3),
+    marginTop: vh(0.5),
+  },
   registerButton: {
     backgroundColor: "#007AFF",
     borderRadius: 8,
     padding: vw(4),
     alignItems: "center",
     marginTop: vh(2),
+  },
+  disabledButton: {
+    backgroundColor: "#555",
+    opacity: 0.7,
   },
   registerButtonText: {
     color: "#fff",

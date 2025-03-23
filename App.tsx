@@ -27,6 +27,7 @@ export type RootStackParamList = {
     articleAuthor?: string;
     articleDescription?: string;
     articleCategory?: string;
+    selectedFilter: string;
   };
   ArticleSummary: { summary: string };
   Aggregator: {

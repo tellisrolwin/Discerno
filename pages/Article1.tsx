@@ -37,7 +37,8 @@ const Article1 = () => {
     articleImage,
     articleAuthor,
     articleDescription,
-    articleCategory, // Ensure this is being passed
+    articleCategory, 
+    selectedFilter
   } = route.params;
 
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -68,7 +69,7 @@ const Article1 = () => {
     setLoadingSummary(true);
     try {
       const response = await fetch(
-        `http://192.168.0.106:8000/summary?link=${encodeURIComponent(
+        `http://192.168.0.104:8000/summary?link=${encodeURIComponent(
           articleLink
         )}`
       );
@@ -104,7 +105,7 @@ const Article1 = () => {
         setSavingPreference(true);
         console.log(`Saving preference: User ID=${userId}, Category=${articleCategory}`);
 
-        const saveResponse = await fetch("http://192.168.0.106:8000/preferences", {
+        const saveResponse = await fetch("http://192.168.0.104:8000/preferences", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -163,12 +164,14 @@ const Article1 = () => {
         </TouchableOpacity>
 
         <View style={styles.topRightContainer}>
+        {selectedFilter !== "All" && (
           <TouchableOpacity
             style={styles.ellipsisButton}
             onPress={handleEllipsisPress}
           >
             <Text style={styles.ellipsisButtonText}>...</Text>
           </TouchableOpacity>
+        )}
           <TouchableOpacity
             style={styles.summaryButton}
             onPress={fetchSummary}

@@ -1,7 +1,7 @@
 // AuthService.ts
 import { Alert } from "react-native";
 
-const YOUR_COMPUTER_IP = "192.168.0.106:8080"; // REPLACE WITH YOUR ACTUAL IP
+const YOUR_COMPUTER_IP = "192.168.0.104:8080"; // REPLACE WITH YOUR ACTUAL IP
 
 // Utility function to handle API responses
 const handleApiResponse = async (response: Response) => {
