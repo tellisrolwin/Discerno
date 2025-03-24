@@ -37,7 +37,7 @@ const Article1 = () => {
     articleImage,
     articleAuthor,
     articleDescription,
-    articleCategory, 
+    articleCategory,
     selectedFilter
   } = route.params;
 
@@ -45,12 +45,13 @@ const Article1 = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const [savingPreference, setSavingPreference] = useState(false);
+  const [deletingPreference, setDeletingPreference] = useState(false); // New state for deletion
 
   useEffect(() => {
     const getUserId = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem("userId");
-        console.log("Retrieved storedUserId:", storedUserId); // Log retrieved value
+        console.log("Retrieved storedUserId:", storedUserId);
         if (storedUserId) {
           setUserId(parseInt(storedUserId, 10));
           console.log(`User ID set: ${parseInt(storedUserId, 10)}`);
@@ -98,15 +99,60 @@ const Article1 = () => {
   const handleModalResponse = async (response: string) => {
     setModalVisible(false);
     console.log(`User response: ${response}`);
-    console.log(`Current userId: ${userId}, articleCategory: ${articleCategory}`); // Log before API call
+    console.log(`Current userId: ${userId}, articleCategory: ${articleCategory}`);
 
     if (response === "yes" && userId && articleCategory) {
-      try {
-        setSavingPreference(true);
-        console.log(`Saving preference: User ID=${userId}, Category=${articleCategory}`);
+        // Existing "yes" logic (saving preference)
+        try {
+            setSavingPreference(true);
+            console.log(`Saving preference: User ID=${userId}, Category=${articleCategory}`);
 
-        const saveResponse = await fetch("http://192.168.0.104:8000/preferences", {
-          method: "POST",
+            const saveResponse = await fetch("http://192.168.0.104:8000/preferences", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                userId: userId,
+                category: articleCategory,
+              }),
+            });
+
+            console.log(`Server response status: ${saveResponse.status}`);
+
+            if (!saveResponse.ok) {
+              const errorText = await saveResponse.text();
+              console.error(`HTTP error with status ${saveResponse.status}: ${errorText}`);
+              throw new Error(`HTTP error! Status: ${saveResponse.status}, Details: ${errorText}`);
+            }
+
+            const result = await saveResponse.json();
+            console.log("Preference saved successfully:", result);
+
+            Alert.alert(
+              "Preference Saved",
+              `We'll show you more ${articleCategory} articles!`,
+              [{ text: "OK" }]
+            );
+          } catch (error) {
+            console.error("Error saving preference:", error);
+            Alert.alert(
+              "Error",
+              "Failed to save your preference. Please try again.",
+              [{ text: "OK" }]
+            );
+          } finally {
+            setSavingPreference(false);
+          }
+
+    } else if (response === "no" && userId && articleCategory) {
+      // New "no" logic (deleting preference)
+      try {
+        setDeletingPreference(true); // Set deleting state
+        console.log(`Deleting preference: User ID=${userId}, Category=${articleCategory}`);
+
+        const deleteResponse = await fetch("http://192.168.0.104:8000/preferences", {
+          method: "DELETE", // Use DELETE method
           headers: {
             "Content-Type": "application/json",
           },
@@ -116,33 +162,34 @@ const Article1 = () => {
           }),
         });
 
-        console.log(`Server response status: ${saveResponse.status}`);
-
-        if (!saveResponse.ok) {
-          const errorText = await saveResponse.text();
-          console.error(`HTTP error with status ${saveResponse.status}: ${errorText}`);
-          throw new Error(`HTTP error! Status: ${saveResponse.status}, Details: ${errorText}`);
+        if (!deleteResponse.ok) {
+          const errorText = await deleteResponse.text();
+          console.error(`HTTP error with status ${deleteResponse.status}: ${errorText}`);
+          throw new Error(`HTTP error! Status: ${deleteResponse.status}, Details: ${errorText}`);
         }
 
-        const result = await saveResponse.json();
-        console.log("Preference saved successfully:", result);
+        const result = await deleteResponse.json();
+        console.log("Preference deleted successfully:", result);
 
         Alert.alert(
-          "Preference Saved",
-          `We'll show you more ${articleCategory} articles!`,
+          "Preference Removed",
+          `We'll show you fewer ${articleCategory} articles.`,
           [{ text: "OK" }]
         );
+
       } catch (error) {
-        console.error("Error saving preference:", error);
+        console.error("Error deleting preference:", error);
         Alert.alert(
           "Error",
-          "Failed to save your preference. Please try again.",
+          "Failed to remove your preference. Please try again.",
           [{ text: "OK" }]
         );
       } finally {
-        setSavingPreference(false);
+        setDeletingPreference(false); // Reset deleting state
       }
-    } else if (response === "yes") {
+
+    } else if ((response === "yes" || response === "no") && (!userId || !articleCategory)) {
+      // Handle missing data case
       console.error(`Missing data - User ID: ${userId}, Category: ${articleCategory}`);
       Alert.alert(
         "Error",
@@ -203,14 +250,14 @@ const Article1 = () => {
               <TouchableOpacity
                 style={[styles.button, styles.buttonCancel]}
                 onPress={() => handleModalResponse("cancel")}
-                disabled={savingPreference}
+                disabled={savingPreference || deletingPreference} // Disable during either operation
               >
                 <Text style={styles.textStyle}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.button, styles.buttonYes]}
                 onPress={() => handleModalResponse("yes")}
-                disabled={savingPreference}
+                disabled={savingPreference || deletingPreference}
               >
                 {savingPreference ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -221,9 +268,13 @@ const Article1 = () => {
               <TouchableOpacity
                 style={[styles.button, styles.buttonNo]}
                 onPress={() => handleModalResponse("no")}
-                disabled={savingPreference}
+                disabled={savingPreference || deletingPreference}
               >
-                <Text style={styles.textStyle}>No</Text>
+                {deletingPreference ? ( // Show loading indicator for deletion
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.textStyle}>No</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

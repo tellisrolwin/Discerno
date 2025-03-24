@@ -115,9 +115,9 @@ app.get("/user-preferences", async (req, res) => {
 app.post("/preferences", async (req, res) => {
     try {
       const { userId, category } = req.body;
-      
+
       console.log("Received preference update request:", req.body);
-      
+
       if (!userId) {
         return res.status(400).json({ message: "User ID is required" });
       }
@@ -127,21 +127,21 @@ app.post("/preferences", async (req, res) => {
         "SELECT id FROM users WHERE id = $1",
         [userId]
       );
-      
+
       if (userCheck.rows.length === 0) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       console.log(`User ${userId} verified in database`);
-      
+
       // Get current preferences
       const currentPrefs = await pool.query(
         "SELECT categories FROM preferences WHERE id = $1", // Use 'id'
         [userId]
       );
-      
+
       console.log("Current preferences query result:", currentPrefs.rows);
-      
+
       if (currentPrefs.rows.length === 0) {
         // Initialize preferences if they don't exist
         console.log(`Creating new preferences for user ${userId}`);
@@ -154,11 +154,11 @@ app.post("/preferences", async (req, res) => {
         // Update existing preferences
         const existingCategories = currentPrefs.rows[0].categories || [];
         console.log("Existing categories:", existingCategories);
-        
+
         if (!existingCategories.includes(category)) {
           const updatedCategories = [...existingCategories, category];
           console.log(`Updating preferences to: ${updatedCategories}`);
-          
+
           await pool.query(
             "UPDATE preferences SET categories = $1 WHERE id = $2", // Use 'id'
             [updatedCategories, userId]
@@ -169,21 +169,80 @@ app.post("/preferences", async (req, res) => {
         }
       }
 
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: "Preferences updated successfully",
         success: true
       });
-      
+
     } catch (error) {
       console.error("Error in /preferences route:", error);
-      
-      return res.status(500).json({ 
+
+      return res.status(500).json({
         message: "Failed to update preferences",
         error: error.message,
         success: false
       });
     }
   });
+
+// NEW DELETE ENDPOINT
+app.delete("/preferences", async (req, res) => {
+  try {
+    const { userId, category } = req.body;  // Get data from request body
+
+    console.log("Received preference deletion request:", req.body);
+
+    if (!userId || !category) {
+      return res.status(400).json({ message: "User ID and category are required" });
+    }
+
+    // Check if the user exists (optional, but good practice)
+    const userCheck = await pool.query(
+      "SELECT id FROM users WHERE id = $1",
+      [userId]
+    );
+
+    if (userCheck.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Get current preferences
+    const currentPrefs = await pool.query(
+      "SELECT categories FROM preferences WHERE id = $1",
+      [userId]
+    );
+
+    if (currentPrefs.rows.length === 0) {
+      // No preferences to delete, but it's not an error.  Return success.
+      return res.status(200).json({ message: "Preference not found, nothing to delete", success: true });
+    }
+
+    const existingCategories = currentPrefs.rows[0].categories || [];
+    const updatedCategories = existingCategories.filter((cat) => cat !== category); // Remove the category
+
+    if (existingCategories.length === updatedCategories.length) {
+       // Category wasn't in the list, but request is still valid (no-op)
+       return res.status(200).json({ message: "Preference not found, nothing to delete", success: true });
+    }
+
+
+    // Update the preferences
+    await pool.query(
+      "UPDATE preferences SET categories = $1 WHERE id = $2",
+      [updatedCategories, userId]
+    );
+
+    return res.status(200).json({ message: "Preference removed successfully", success: true });
+
+  } catch (error) {
+    console.error("Error in DELETE /preferences route:", error);
+    return res.status(500).json({
+      message: "Failed to remove preference",
+      error: error.message,
+      success: false
+    });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
