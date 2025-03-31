@@ -80,7 +80,7 @@ const Article1 = () => {
       }
       const data = await response.json();
       if (data.summary) {
-        navigation.navigate("ArticleSummary", { summary: data.summary });
+        navigation.navigate("ArticleSummary", { summary: data.summary, insights: data.insights });
       } else {
         console.error("Summary not found in response:", data);
         alert("Could not generate summary.");
@@ -286,7 +286,7 @@ const Article1 = () => {
         {articleCategory && (
           <Text style={styles.category}>{articleCategory}</Text>
         )}
-        <Text style={styles.publication}>{articleSource ? articleSource : 'Unknown Source'}</Text>
+        <Text style={styles.publication}>{articleSource ? articleSource : 'ndtv'}</Text>
         <Text style={styles.title}>{articleTitle}</Text>
         {articleImage && (
           <Image source={{ uri: articleImage }} style={styles.image} />

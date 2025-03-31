@@ -32,7 +32,7 @@ export type RootStackParamList = {
     articleSource?: string;
 
   };
-  ArticleSummary: { summary: string };
+  ArticleSummary: { summary: string, insights: string };
   Aggregator: {
     userId: number | null;
   }; // Add the new route
