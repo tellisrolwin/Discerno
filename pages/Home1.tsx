@@ -170,7 +170,7 @@ const Home1 = () => {
     fetchNews();
   }, []);
 
-  const fetchArticle = async (link: string, title: string, category: string) => {
+  const fetchArticle = async (link: string, title: string, category: string, source: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -182,7 +182,7 @@ const Home1 = () => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data: { article: string } = await response.json();
+      const data: { article: string, source: string } = await response.json();
 
       // Navigate to the Article screen with the article data
       navigation.navigate("Article", {
@@ -191,6 +191,7 @@ const Home1 = () => {
         articleDescription: data.article,
         articleCategory: category,
         selectedFilter: selectedFilter,
+        articleSource: data.source,
       });
     } catch (error: any) {
       console.error("Could not fetch article:", error);
@@ -438,7 +439,7 @@ const Home1 = () => {
                   <View style={styles.newsContent}>
                     <TouchableOpacity
                       onPress={() => {
-                        fetchArticle(item.link, item.title, item.category);
+                        fetchArticle(item.link, item.title, item.category, item.source);
                       }}
                     >
                       <Text style={styles.newsTitle}>{item.title}</Text>

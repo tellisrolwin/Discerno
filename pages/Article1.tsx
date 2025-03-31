@@ -38,7 +38,8 @@ const Article1 = () => {
     articleAuthor,
     articleDescription,
     articleCategory,
-    selectedFilter
+    selectedFilter,
+    articleSource,
   } = route.params;
 
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -285,7 +286,7 @@ const Article1 = () => {
         {articleCategory && (
           <Text style={styles.category}>{articleCategory}</Text>
         )}
-        <Text style={styles.publication}>The Hindu</Text>
+        <Text style={styles.publication}>{articleSource ? articleSource : 'Unknown Source'}</Text>
         <Text style={styles.title}>{articleTitle}</Text>
         {articleImage && (
           <Image source={{ uri: articleImage }} style={styles.image} />
